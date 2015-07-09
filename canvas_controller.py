@@ -123,6 +123,7 @@ class MplImageCanvas(AbstractMplCanvas):
                 self.lower.remove()
             x0, y0 = self.point.getCoords()
             xList = self.boarder.getCoords()
+
             x, y = self.model.calcTheoryModel(x0, y0, xList, self.img.y_size)
             y1, y2 = self.calculateBinExtrema(y)
             self.curve = MplCurveTheory(self.ax)
@@ -132,36 +133,51 @@ class MplImageCanvas(AbstractMplCanvas):
             self.lower = MplCurveTheory(self.ax)
             self.lower.setElement(x[1:], y2)
             self.draw()
+
             return True
+
         return False
 
     def calculateBinExtrema(self, y_arr):
         y_old = -1
-        print len(y_arr)
         lower = np.zeros(len(y_arr))
         upper = np.zeros(len(y_arr))
+        y_max = self.img.mtrx.shape[0]
+
         for i, y in enumerate(y_arr):
-            print i
             y = int(y)
             if y_old != -1:
-                lower[i] = y_old - self.binRange
-                upper[i] = y + self.binRange + 1
+                upper[i] = y_old - self.binRange
+                lower[i] = y + self.binRange + 1
             y_old = y
 
+        lower[lower > y_max] = y_max
         return upper[1:], lower[1:]
 
     def calculateBins(self):
         if hasattr(self, "curve"):
-            x_arr, y_arr = self.curve.par.get_data()
+            x_array, y_array = self.curve.par.get_data()
             mtx = self.img.mtrx
+            y_max = self.img.mtrx.shape[0]
             y_old = -1
             binn = []
-            for x, y in zip(x_arr, y_arr):
+            for x, y in zip(x_array, y_array):
                 y = int(y)
                 if y_old != -1:
-                    binn.append(sum([mtx[i, x] for i in range(y_old - self.binRange, y + self.binRange + 1)]))
+                    up = y_old - self.binRange
+                    low = y + self.binRange + 1
+                    if low > y_max:
+                        low = y_max
+                    '''
+                    summary = 0
+                    for i in range(up, low):
+                        summary += mtx[i, x]
+                    binn.append(summary)
+                    -->
+                    '''
+                    binn.append(sum([mtx[i, x] for i in range(up, low)]))
                 y_old = y
-            xs = x_arr[1:] + 0.5
+            xs = x_array[1:] + 0.5
 
             return xs, binn
 
